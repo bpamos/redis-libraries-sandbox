@@ -1,14 +1,9 @@
 import { createClient } from 'redis';
 
 // Replace with your Redis Cloud connection details
-// const REDIS_HOST = 'your-redis-hostname.redis.cache.amazonaws.com';
-// const REDIS_PORT = 12345;
-// const REDIS_PASSWORD = 'your-redis-password';
-
-// Replace with your Redis Cloud connection details
-const REDIS_HOST = 'redis-17322.c98.us-east-1-4.ec2.redns.redis-cloud.com';
-const REDIS_PORT = 17322;
-const REDIS_PASSWORD = 'x28jAoV4idZOBuVsRKBQAG5qKcYSXB1V';
+const REDIS_HOST = 'redis_endpoint';
+const REDIS_PORT = 10000;
+const REDIS_PASSWORD = 'redis_password';
 
 const client = createClient({
   socket: {

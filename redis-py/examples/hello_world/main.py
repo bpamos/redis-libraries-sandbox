@@ -1,9 +1,9 @@
 import redis
 
 # Replace with your Redis Cloud connection details
-REDIS_HOST = "redis-17322.c98.us-east-1-4.ec2.redns.redis-cloud.com"
-REDIS_PORT = 17322
-REDIS_PASSWORD = "x28jAoV4idZOBuVsRKBQAG5qKcYSXB1V"
+REDIS_HOST = "redis_endpoint"
+REDIS_PORT = 10000
+REDIS_PASSWORD = "redis_password"
 
 # Create Redis client
 client = redis.Redis(
