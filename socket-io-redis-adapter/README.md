@@ -1,6 +1,9 @@
-# socket.io Redis Adapter Example (Redis Cloud, No TLS)
+# socket.io Redis Adapter Example
 
 This demo shows how to use the `@socket.io/redis-adapter` with Redis Cloud to sync events between multiple Socket.IO servers using Redis pub/sub.
+
+This will work with a single Redis DB, sharing the endpoint between server 1 and server 2. 
+As well as an active-active db where there are two Redis dbs and server 1 uses the endpoint for redis db 1 and server 2 uses the endpoint for redis db 2. The data is shared bidirectionally so the redis adapter functions just as it does in a single redis db between the two servers.
 
 ## What It Does
 
@@ -8,6 +11,7 @@ This demo shows how to use the `@socket.io/redis-adapter` with Redis Cloud to sy
 - Each server emits a test message every 5 seconds
 - Messages are synced via Redis so both servers can broadcast to clients
 - A browser client (served by `server1.js`) receives and logs all messages
+- also provides custom messaging capabilities to provide custom message in `server1` and see it in both `server1` and `server2` and vice versa.
 
 ## Prerequisites
 
@@ -22,6 +26,7 @@ This demo shows how to use the `@socket.io/redis-adapter` with Redis Cloud to sy
 2. Install dependencies:
 
 ```bash
+cd socket-io-redis-adapter
 # only run in 1 termial
 npm install
 # Update Redis connection details in both server1.js and server2.js:
@@ -45,7 +50,7 @@ PORT=3001 node server2.js
 ## [Server 3000] broadcast test
 ## [Server 3001] broadcast test
 ### you can message in both and see it show up in the other clients logs
-
+```
 
 ## How to Verify Redis Sync
 
