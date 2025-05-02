@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO Redis Adapter Test</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 2rem;
+      }
+      input, button {
+        padding: 0.5rem;
+        font-size: 1rem;
+        margin-right: 0.5rem;
+      }
+      #messages {
+        margin-top: 1rem;
+        padding-left: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Socket.IO Redis Adapter Test</h1>
+    <p>Send a message:</p>
+    <input id="messageInput" type="text" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+
+    <h3>Messages received:</h3>
+    <ul id="messages"></ul>
+
+    <script>
+      // Connect to the same origin/port the page was served from
+      const socket = io();
+
+      socket.on('connect', () => {
+        console.log('✅ Connected to server');
+      });
+
+      socket.on('message', (msg) => {
+        const li = document.createElement('li');
+        li.textContent = msg;
+        document.getElementById('messages').appendChild(li);
+      });
+
+      function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const msg = input.value;
+        if (msg) {
+          socket.emit('message', msg);
+          input.value = '';
+        }
+      }
+    </script>
+  </body>
+</html>
