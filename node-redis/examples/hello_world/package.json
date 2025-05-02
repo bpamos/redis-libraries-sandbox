@@ -1,0 +1,14 @@
+{
+    "name": "node-redis-example",
+    "version": "1.0.0",
+    "description": "Simple example using node-redis with Redis Cloud",
+    "main": "index.js",
+    "scripts": {
+      "start": "node index.js"
+    },
+    "dependencies": {
+      "redis": "^4.6.7"
+    },
+    "type": "module"
+  }
+  
