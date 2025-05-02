@@ -22,8 +22,8 @@ const client = createClient({
 async function run() {
   try {
     await client.connect();
-    await client.set('hello', 'world');
-    const value = await client.get('hello');
+    await client.set('key_node_redis', 'hello from node-redis');
+    const value = await client.get('key_node_redis');
     console.log(`hello: ${value}`);
   } catch (err) {
     console.error('Redis error:', err);

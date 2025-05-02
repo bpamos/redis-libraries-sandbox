@@ -1,20 +1,24 @@
 # node-redis
 
-This is a simple example using the `node-redis` client to connect to a Redis database in Redis Cloud, write a key, and read it back.
+This folder contains examples using the [`node-redis`](https://github.com/redis/node-redis) client to interact with a Redis database.
 
-## Prerequisites
+## Project Structure
 
-- Node.js v16 or higher
-- A Redis Cloud database (get one at https://redis.com/try-free/)
-  - Copy the `host`, `port`, and `password` from your Redis Cloud connection details
+Each example lives in its own subdirectory under `examples/` and contains:
+- A `main.js` script that demonstrates the example
+- A `package.json` with only the necessary dependencies
+- A `README.md` explaining how to run the example
 
-## Setup
+## Redis Connection
 
-1. Open a terminal and navigate to this folder:
+All examples use hardcoded connection values pointing to Redis Cloud (no TLS):
 
-```bash
-cd node-redis
-# install dependencies
-npm install
-# Add your Redis Cloud connection details to the index.js file.
-node index.js
+```js
+const config = {
+  socket: {
+    host: 'your-redis-host',
+    port: 12345
+  },
+  username: 'your-redis-username',
+  password: 'your-redis-password'
+};
