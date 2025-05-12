@@ -39,7 +39,7 @@ https://upstash-worker.<your-subdomain>.workers.dev
 ---
 
 ### Examples
-* examples/upstash_worker/
+#### examples/upstash_worker/
 Uses the @upstash/redis/cloudflare SDK
 
 Communicates with Redis over HTTPS (REST API)
@@ -48,7 +48,7 @@ Works seamlessly in Cloudflare Workers without any TCP or proxy setup
 
 Ideal for edge-native apps
 
-* examples/redis_cloud/
+#### examples/redis_cloud/
 Connects to Redis Cloud using raw TCP via Cloudflare’s connect() API
 
 Uses the redis-on-workers library to issue raw Redis commands
