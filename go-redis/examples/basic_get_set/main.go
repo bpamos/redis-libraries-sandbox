@@ -11,16 +11,9 @@ import (
 func main() {
 	ctx := context.Background()
 
-	// rdb := redis.NewClient(&redis.Options{
-	// 	Addr:     "REDIS_HOST:REDIS_PORT", // e.g., "redis-12345.c1.us-west-1-2.ec2.cloud.redislabs.com:12345"
-	// 	Password: "REDIS_PASSWORD",       // Redis Cloud password
-	// 	DB:       0,                      // default DB
-	// 	TLSConfig: nil,                  // disable TLS
-	// })
-
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "redis-17322.c98.us-east-1-4.ec2.redns.redis-cloud.com:17322", // e.g., "redis-12345.c1.us-west-1-2.ec2.cloud.redislabs.com:12345"
-		Password: "x28jAoV4idZOBuVsRKBQAG5qKcYSXB1V",       // Redis Cloud password
+		Addr:     "REDIS_HOST:REDIS_PORT", // e.g., "redis-12345.c1.us-west-1-2.ec2.cloud.redislabs.com:12345"
+		Password: "REDIS_PASSWORD",       // Redis Cloud password
 		DB:       0,                      // default DB
 		TLSConfig: nil,                  // disable TLS
 	})
