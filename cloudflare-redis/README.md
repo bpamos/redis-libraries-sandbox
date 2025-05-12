@@ -3,7 +3,7 @@
 This project demonstrates how to connect Cloudflare Workers to Redis databases using two different approaches:
 
 1. **Upstash Redis** – via HTTPS using the official Upstash SDK  
-2. **Redis Cloud** – via TCP socket using Cloudflare's experimental `connect()` API and the `redis-on-workers` library
+2. **Redis Cloud** – via TCP socket using Cloudflare's experimental `connect()` API and the `redis-on-workers` library (https://github.com/kane50613/redis-on-workers) from this blog: (https://blog.cloudflare.com/workers-tcp-socket-api-connect-databases/)
 
 Both examples live in the `examples/` folder and are deployable to Cloudflare Workers.
 
