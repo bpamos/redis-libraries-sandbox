@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "redis-on-workers": "^0.3.1"
+  }
+}

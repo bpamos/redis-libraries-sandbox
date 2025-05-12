@@ -1,0 +1,20 @@
+# Ignore dependencies
+**/node_modules/
+
+# Ignore wrangler cache
+.wrangler/
+
+# Optional: ignore all wrangler.toml files if they contain secrets
+**/wrangler.toml
+
+# Ignore env files
+.env
+**/.env
+
+# Ignore build output
+dist/
+build/
+
+
+# Local environment config
+environment.txt
