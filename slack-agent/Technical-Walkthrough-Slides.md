@@ -1,16 +1,18 @@
 # Redis-Powered AI Agent: Technical Deep Dive
 ## Step-by-Step Walkthrough in Slides
 
-**Format:** 16:9 slides | **Total:** 22 slides | **Duration:** ~30-40 minutes
-**Style:** Deep technical walkthrough following one message through the entire system
+**Format:** 16:9 slides (960px width) | **Total:** 22 slides | **Duration:** ~30-40 minutes
 
 ---
 
-## SLIDE 1 - Title
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
+
+## SLIDE 1
 
 <div align="center">
 
-# Redis-Powered AI Agent: Technical Deep Dive
+# Redis-Powered AI Agent
+## Technical Deep Dive
 
 ### Following One Message Through The Entire System
 
@@ -26,9 +28,15 @@ November 18, 2024
 
 </div>
 
+</div>
+
 ---
 
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
+
 ## SLIDE 2 - What We're Building
+
+**Context:** Before we dive into the code, let's understand what we've built and why Redis is the perfect foundation for AI agents.
 
 ### What We're Building: Haink
 
@@ -43,12 +51,11 @@ November 18, 2024
 
 ### The Challenge
 
-Most AI agents require:
+Most AI agents require multiple databases:
 - **PostgreSQL** (documents) → Complex to maintain
 - **Pinecone** (vectors) → High latency between systems
 - **RabbitMQ** (queues) → Data consistency issues
 - **Memcached** (cache) → Expensive ($170/month minimum)
-- **+** Session store, rate limiter...
 
 ### Our Approach
 
@@ -59,98 +66,107 @@ Most AI agents require:
 
 </div>
 
+</div>
+
 ---
+
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
 ## SLIDE 3 - Architecture Overview
 
-### System Architecture
+**Context:** Our architecture separates concerns into three layers, all communicating through Redis as the single source of truth.
 
 ```
-                                ┌─────────┐
-                                │  Slack  │
-                                └────┬────┘
-                                     │ Webhook
-                                     ▼
-                            ┌────────────────┐
-                            │  FastAPI API   │ ← Handles webhooks
-                            └────────┬───────┘   Queues tasks
-                                     │           Returns in <3s
-                                     ▼
-┌────────────────────────────────────────────────────────────────────┐
-│                        Redis (Single Database)                      │
-│                                                                     │
-│  Streams      Hashes       JSON        Strings     +more           │
-│  (Queues)     (Vectors)    (Docs)      (Cache)                     │
-└────────────────────────────┬───────────────────────────────────────┘
-                             │
-                             ▼
-                    ┌────────────────┐
-                    │ Docket Worker  │ ← Processes tasks
-                    └────────┬───────┘   Runs agent
-                             │           Calls tools
-                             ▼
-                    ┌────────────────┐
-                    │ Agent (ReAct)  │ ← Makes decisions
-                    │                │   Searches Redis
-                    │ • Knowledge    │   Uses memory
-                    │ • Memory       │   Web search
-                    │ • Web Search   │
-                    └────────────────┘
+                            ┌─────────┐
+                            │  Slack  │
+                            └────┬────┘
+                                 │ Webhook
+                                 ▼
+                        ┌────────────────┐
+                        │  FastAPI API   │ ← Handles webhooks
+                        └────────┬───────┘   Queues tasks (< 3s)
+                                 │
+                                 ▼
+┌────────────────────────────────────────────────────────────┐
+│                   Redis (Single Database)                   │
+│  Streams  |  Hashes+Vectors  |  JSON  |  Strings+TTL       │
+│  (Queue)     (Knowledge)       (Docs)    (Cache/Flags)     │
+└────────────────────────┬───────────────────────────────────┘
+                         │
+                         ▼
+                ┌────────────────┐
+                │ Docket Worker  │ ← Processes tasks
+                └────────┬───────┘   Runs agent
+                         │
+                         ▼
+                ┌────────────────┐
+                │ Agent (ReAct)  │ ← 🌟 WHERE THE MAGIC HAPPENS
+                │                │   Makes decisions
+                │ Tools:         │   Searches Redis
+                │ • Knowledge    │   Uses memory
+                │ • Memory       │   Web search
+                │ • Web Search   │
+                └────────────────┘
 ```
 
 **Today:** We'll follow ONE message through this entire system, step by step
 
+</div>
+
 ---
+
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
 ## SLIDE 4 - The Journey Begins
 
-### The Journey Begins
+**Context:** Let's follow a real question from Brandon in the #general-questions channel. Watch how it flows through every component and see exactly what Redis stores along the way.
 
-**Our Example Question:**
+### Our Example Question:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Slack - #engineering channel                       │
+│  Slack - #general-questions                         │
 │                                                     │
-│  👤 Sarah (10:30:15 AM)                            │
-│  @Haink what's Redis vector search?                │
-│                                                     │
+│  👤 Brandon (10:30:15 AM)                          │
+│  @Haink Tell me about Redis for Semantic caching  │
 └─────────────────────────────────────────────────────┘
 ```
 
-### What happens next:
+### The 15-Step Journey:
 
-1. Slack sends webhook to our FastAPI server
-2. API acknowledges (< 50ms) and queues task to Redis
-3. Worker picks up task from Redis queue
-4. Agent searches knowledge base (stored in Redis)
-5. Agent formulates response
-6. Response posted back to Slack
-7. User feedback tracked in Redis
+1. Slack webhook arrives at FastAPI → **Acknowledged in 50ms**
+2. Task queued to Redis Streams → **Returns immediately**
+3. Worker picks up from queue → **Begins processing**
+4. Track thread participation → **Prevent spam**
+5. Send "Thinking..." update → **User feedback**
+6. Gather thread context → **Conversation history**
+7. **🌟 Agent starts ReAct loop** → **Intelligence begins**
+8-12. Agent reasons & searches → **Multi-turn thinking**
+13. Store answer in Redis → **Analytics ready**
+14. Post to Slack with feedback buttons → **User sees response**
+15. User feedback updates Redis → **Continuous improvement**
 
-**Let's dive into each step and see the Redis storage...**
+</div>
 
 ---
 
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
+
 ## SLIDE 5 - Step 1: Webhook Arrives
 
-### Step 1: Slack Webhook Arrives at FastAPI
+**Context:** Slack sends a webhook to our FastAPI server. We have 3 seconds to acknowledge or Slack will retry. Our strategy: acknowledge immediately, queue the work, return.
 
-**What Happens:**
-
-Slack sends HTTP POST to: `/slack/events`
-
-**Payload:**
+**What Happens:** Slack POST to `/slack/events`
 
 ```json
 {
   "event": {
     "type": "app_mention",
-    "user": "U12345ABC",                     // ← Sarah's user ID
-    "text": "@Haink what's Redis vector search?",
-    "channel": "C789XYZ",                    // ← #engineering channel
-    "ts": "1234567890.123456",               // ← Message timestamp
-    "thread_ts": null                        // ← Not in a thread
+    "user": "U789BRANDON",
+    "text": "@Haink Tell me about Redis for Semantic caching",
+    "channel": "C123GENERAL",
+    "ts": "1234567890.123456",
+    "thread_ts": null
   }
 }
 ```
@@ -161,20 +177,23 @@ Slack sends HTTP POST to: `/slack/events`
 async def handle_app_mentions(body, say, ack):
     await ack()  # MUST respond within 3 seconds!
 
-    user = body["event"]["user"]           # "U12345ABC"
-    text = body["event"]["text"]           # "what's Redis vector search?"
-    channel = body["event"]["channel"]     # "C789XYZ"
-    thread_ts = body["event"].get("thread_ts")
+    user = body["event"]["user"]         # "U789BRANDON"
+    text = body["event"]["text"]         # "Tell me about..."
+    channel = body["event"]["channel"]   # "C123GENERAL"
 ```
 
 > **Critical:** Slack requires acknowledgment within 3 seconds or will retry
-> **Solution:** Acknowledge immediately, then queue work for background processing
+> **Solution:** Acknowledge immediately, queue work for async processing
+
+</div>
 
 ---
 
-## SLIDE 6 - Step 2: Queue to Redis
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### Step 2: Queue Task to Redis Streams
+## SLIDE 6 - Step 2: Queue to Redis Streams
+
+**Context:** Now that we've acknowledged Slack, we queue the actual work to Redis Streams. This decouples the API from the heavy processing and makes the system fault-tolerant.
 
 **Code** (`app/api/main.py:126-134`):
 
@@ -188,33 +207,32 @@ async with Docket(name="applied-ai-agent", url=redis_url) as docket:
         channel_id=channel,
         thread_ts=thread_ts
     )
-
-# API returns immediately - work happens in background
 ```
 
-### 📦 Redis Storage (Redis Streams)
+### 📦 Redis Storage (Streams)
 
 **Key:** `docket:applied-ai-agent:tasks`
-**Type:** Stream
-
-**Value (Stream Entry):**
 
 ```
 1705315815000-0 {
-  "task": "app.agent.tasks.slack_tasks:process_slack_question_with_retry",
-  "key": "question-U12345ABC-a8f3c9d2-1234567890.123456",
-  "args": "{\"user_id\":\"U12345ABC\",\"text\":\"what's Redis...\"}",
+  "task": "app.agent.tasks.slack_tasks:process_slack_question...",
+  "key": "question-U789BRANDON-a8f3c9d2-1234567890.123456",
+  "args": "{\"user_id\":\"U789BRANDON\",\"text\":\"Tell me...\"}",
   "retry_count": "0"
 }
 ```
 
-**Why Streams:** Guaranteed delivery, ordered processing, consumer groups, automatic redelivery if worker crashes
+**Why Streams:** Guaranteed delivery, consumer groups, auto-redelivery
+
+</div>
 
 ---
 
-## SLIDE 7 - Step 3: Worker Picks Up
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### Step 3: Worker Picks Up Task from Queue
+## SLIDE 7 - Step 3: Worker Picks Up Task
+
+**Context:** Our Docket worker continuously polls Redis Streams using consumer groups. When a task appears, it's immediately claimed by a worker. If the worker crashes, another worker will pick it up after timeout.
 
 **Code** (`app/worker/worker.py:107`):
 
@@ -226,26 +244,26 @@ await Worker.run(
     redelivery_timeout=timedelta(seconds=60),
     tasks=["app.worker.task_registration:all_tasks"],
 )
-
-# Worker continuously polls Redis Streams using XREADGROUP
-# When task found, executes process_slack_question_with_retry()
 ```
 
 ### How it Works:
 
-1. Worker issues: `XREADGROUP GROUP workers consumer1 BLOCK 5000 STREAMS docket:applied-ai-agent:tasks`
-2. Redis returns task entry
-3. Worker looks up function: `process_slack_question_with_retry`
-4. Worker executes with args: `user_id, text, channel_id, thread_ts`
-5. If execution fails, task redelivered after timeout
+1. Worker executes: `XREADGROUP GROUP workers consumer1 BLOCK 5000 STREAMS docket:applied-ai-agent:tasks`
+2. Redis returns the queued task entry
+3. Worker deserializes and calls: `process_slack_question_with_retry()`
+4. If worker crashes, task redelivered after 60s to another worker
 
-**Benefits:** Worker crash? Another worker picks it up. No lost messages.
+**Benefits:** No lost messages. Horizontal scaling. Fault tolerance.
+
+</div>
 
 ---
 
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
+
 ## SLIDE 8 - Step 4: Track Thread Participation
 
-### Step 4: Track Thread Participation (Prevent Over-Engagement)
+**Context:** Before we engage, we check if we've already participated in this thread. This prevents the bot from monopolizing conversations or responding to every reply.
 
 **Code** (`app/agent/tasks/slack_tasks.py:386`):
 
@@ -254,83 +272,80 @@ async def track_thread_participation(channel_id, thread_ts):
     client = get_redis_client()
     participation_key = keys.thread_participation_key(channel_id, thread_ts)
 
-    # Mark thread as participated
     await client.set(participation_key, "1", ex=3600)  # 1 hour TTL
 ```
 
-### 📦 Redis Storage (String with TTL)
+### 📦 Redis Storage (String + TTL)
 
-**Key:** `thread_participation:C789XYZ:1234567890.123456`
+**Key:** `thread_participation:C123GENERAL:1234567890.123456`
 **Value:** `"1"`
-**TTL:** 3600 seconds (1 hour)
-
-**Redis Command:**
+**TTL:** 3600 seconds (auto-expires)
 
 ```bash
-SET thread_participation:C789XYZ:1234567890.123456 "1" EX 3600
+SET thread_participation:C123GENERAL:1234567890.123456 "1" EX 3600
 ```
 
-### Why This Matters:
+**Why This Matters:**
+- Prevents bot spam in active threads
+- Auto-cleanup after 1 hour (Redis handles it)
+- Atomic check-and-set operation
 
-- Prevents bot from responding to every message in a thread
-- Key auto-expires after 1 hour (Redis handles cleanup)
-- Simple flag check before engaging again
-- Atomic operation - no race conditions
+</div>
 
 ---
 
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
+
 ## SLIDE 9 - Step 5: Send Progress Update
 
-### Step 5: Send Progress Update to User
+**Context:** LLM processing can take 3-10 seconds. We send immediate feedback so users know we're working. Progress updates keep users engaged during processing.
 
 **Code** (`app/agent/tasks/slack_tasks.py:146`):
 
 ```python
 async def progress_callback(message: str):
-    """Send progress status updates to Slack"""
-    status_text = f"_{message}_"  # Italic in Slack markdown
+    """Send progress updates to Slack during processing"""
+    status_text = f"_{message}_"  # Slack italic markdown
 
     await get_slack_app().client.chat_postMessage(
         channel=channel_id,
         text=status_text,
-        blocks=[{"type": "markdown", "text": status_text}],
         thread_ts=thread_ts,
     )
 
-# First update sent immediately
 await progress_callback("Thinking...")
 ```
 
-### What User Sees in Slack:
+### What User Sees:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  👤 Sarah (10:30:15 AM)                            │
-│  @Haink what's Redis vector search?                │
+│  👤 Brandon (10:30:15 AM)                          │
+│  @Haink Tell me about Redis for Semantic caching  │
 │                                                     │
 │  🤖 Haink (10:30:15 AM)                            │
 │  Thinking...                                       │
 └─────────────────────────────────────────────────────┘
 ```
 
-**Why:** Gives immediate feedback that the bot is working
-Progress updates will follow: *"Searching knowledge base..."*, *"Analyzing results..."*
+More updates follow: *"Searching knowledge base..."*, *"Analyzing results..."*
+
+</div>
 
 ---
 
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
+
 ## SLIDE 10 - Step 6: Gather Thread Context
 
-### Step 6: Gather Thread Context from Slack
+**Context:** If this is part of a conversation thread, we need the full history. This allows the agent to understand references like "this", "that approach", or "what you mentioned earlier".
 
 **Code** (`app/agent/tasks/slack_tasks.py:36`):
 
 ```python
 async def get_thread_context(channel_id: str, thread_ts: str):
-    # Get conversation replies (up to 50 messages)
     result = await slack_app.client.conversations_replies(
-        channel=channel_id,
-        ts=thread_ts,
-        limit=50,
+        channel=channel_id, ts=thread_ts, limit=50
     )
 
     thread_context = []
@@ -338,7 +353,6 @@ async def get_thread_context(channel_id: str, thread_ts: str):
         user_id = message.get("user", "unknown")
         text = message["text"]
 
-        # Get username for better context
         user_info = await slack_app.client.users_info(user=user_id)
         username = user_info["user"]["real_name"]
 
@@ -347,67 +361,71 @@ async def get_thread_context(channel_id: str, thread_ts: str):
     return thread_context
 ```
 
-### Why This Matters:
+**Why This Matters:**
+- Enables multi-turn conversations
+- Agent understands context and references
+- Better answers from conversation history
 
-- Agent gets full conversation history
-- Can reference previous questions/answers
-- Provides continuity in multi-turn conversations
-- Helps agent understand context ("this" refers to what?)
+</div>
 
 ---
 
-## SLIDE 11 - Step 7: Agent Starts (ReAct Loop)
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### Step 7: Agent Starts - The ReAct Loop Begins
+## SLIDE 11 - Step 7: Agent Starts 🌟 THE MAGIC BEGINS
+
+**Context:** Here's where the intelligence happens. The agent uses the ReAct (Reason-Act-Observe) pattern: it thinks about what tools it needs, executes them, observes results, and repeats until it has enough information to answer.
 
 **Code** (`app/agent/core.py:346-362`):
 
 ```python
 max_iterations = 25
 tools = [
-    get_search_knowledge_base_tool(),    # Search Redis vectors
-    get_web_search_tool(),               # Search Tavily API
-    *MemoryAPIClient.get_all_memory_tool_schemas(),  # Search Redis memories
+    get_search_knowledge_base_tool(),     # Search Redis vectors
+    get_web_search_tool(),                # Tavily web search
+    *MemoryAPIClient.get_all_memory_tool_schemas(),  # Agent Memory
 ]
 
 messages = [
-    {"role": "system", "content": SYSTEM_PROMPT},  # 235 lines of instructions!
-    {"role": "user", "content": "User question: what's Redis vector search?"}
+    {"role": "system", "content": SYSTEM_PROMPT},  # 235 lines!
+    {"role": "user", "content": f"User: {text}"}
 ]
 
 while iteration < max_iterations:
     response = client.chat.completions.create(
-        model=CHAT_MODEL,      # gpt-4.1 or Bedrock Claude
+        model=CHAT_MODEL,      # GPT-4.1 or Bedrock Claude
         messages=messages,
         tools=tools,
-        tool_choice="auto",    # LLM decides which tools to use
+        tool_choice="auto",    # LLM decides which tools
     )
 ```
 
 ### The ReAct Pattern:
 
-| Stage | Description |
-|-------|-------------|
-| **Reason** | LLM analyzes question, decides what tools are needed |
-| **Act** | Execute tool (search Redis, call API) |
-| **Observe** | Add tool results back to conversation |
-| **Repeat** | Until LLM has enough information to answer |
+| **Reason** → LLM analyzes the question and decides what information it needs
+| **Act** → Execute chosen tool (search Redis, web search, memory lookup)
+| **Observe** → Add tool results to conversation context
+| **Repeat** → Until LLM has enough info to formulate complete answer
+
+</div>
 
 ---
 
-## SLIDE 12 - Step 8: Iteration 1 - Tool Decision
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### Step 8: Iteration 1 - LLM Decides to Search
+## SLIDE 12 - Step 8: Iteration 1 - Tool Decision 🧠
 
-**LLM's Reasoning:**
+**Context:** The LLM receives Brandon's question about semantic caching. It reasons that it should search the internal knowledge base first before trying web search or other tools.
 
-**Input:** *"User question: what's Redis vector search?"*
+### LLM's Internal Reasoning:
 
-**Thinks:** *"I need specific information about Redis vector search capabilities from the internal knowledge base."*
+**Input:** *"Tell me about Redis for Semantic caching"*
 
-**Decision:** Use `search_knowledge_base` tool
+**Thinks:** *"This is asking about a specific Redis feature. I should search the internal knowledge base for authoritative information about semantic caching capabilities."*
 
-### Tool Call Response from LLM:
+**Decision:** Call `search_knowledge_base` tool
+
+### Tool Call (JSON Response from LLM):
 
 ```json
 {
@@ -416,194 +434,197 @@ while iteration < max_iterations:
     "type": "function",
     "function": {
       "name": "search_knowledge_base",
-      "arguments": "{\"query\": \"Redis vector search capabilities\"}"
+      "arguments": "{\"query\": \"Redis semantic caching\"}"
     }
   }]
 }
 ```
 
-**Code** (`app/agent/core.py:391`):
+**Code executes** (`app/agent/core.py:391`):
 
 ```python
 if tool_call.function.name == "search_knowledge_base":
     await progress_callback("Searching knowledge base...")
-
     args = json.loads(tool_call.function.arguments)
-    search_query = args.get("query", "")
-
-    search_results = await search_knowledge_base(index, vectorizer, search_query)
+    results = await search_knowledge_base(index, vectorizer,
+                                          args.get("query"))
 ```
+
+</div>
 
 ---
 
-## SLIDE 13 - Step 9: Embedding Cache Check
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### Step 9: Check Embedding Cache (Cost Optimization)
+## SLIDE 13 - Step 9: Embedding Cache Check 💰
+
+**Context:** Vector search requires converting text to embeddings (calling OpenAI costs money). We cache every embedding in Redis for 24 hours. In production, this saves 65% on embedding costs.
 
 **Code** (`app/agent/tools/search_knowledge_base.py:40`):
 
 ```python
-# Convert query to vector embedding
+# Convert query to vector - checks cache first
 query_vector = vectorizer.embed(query, as_buffer=True)
 
-# Vectorizer checks Redis cache first (via RedisVL EmbeddingsCache)
-# If cached: return immediately (< 0.1ms)
-# If not cached: call OpenAI API, then cache result
+# Behind the scenes (RedisVL EmbeddingsCache):
+# 1. Hash the query text
+# 2. Check Redis cache: GET embedding:cache:text-embedding-3-small:{hash}
+# 3. Cache hit? Return in <0.1ms
+# 4. Cache miss? Call OpenAI API, then cache for 24h
 ```
 
-### 📦 Redis Storage (Binary String with TTL)
+### 📦 Redis Storage (Binary String)
 
-**Key:** `embedding:cache:text-embedding-3-small:5a8f3c9d2e1b4f6a7c8d9e0f1a2b3c4d`
-*(Hash of: "Redis vector search capabilities")*
-
-**Value:** `<binary blob: 6144 bytes>`
-*(1536 float32 values = 1536 × 4 bytes)*
-
+**Key:** `embedding:cache:text-embedding-3-small:9f3a8c2d1e4b...`
+**Value:** `<binary: 6144 bytes>` (1536 × float32)
 **TTL:** 86400 seconds (24 hours)
 
-**Redis Commands:**
-
 ```bash
-GET embedding:cache:text-embedding-3-small:5a8f3c9d2e1b4f6a7c8d9e0f1a2b3c4d
-# If miss: Call OpenAI, then:
+GET embedding:cache:text-embedding-3-small:9f3a8c2d1e4b...
+# Miss: Call OpenAI ($0.0001/1K tokens), then:
 SET embedding:cache:... <binary> EX 86400
 ```
 
-### Cost Savings:
+**ROI:** 65% cache hit rate = 65% cost savings on embeddings
 
-- **OpenAI embedding API:** $0.0001 per 1K tokens
-- **Cache hit rate:** ~65% in production
-- **Result:** 65% cost savings on embeddings
+</div>
 
 ---
 
-## SLIDE 14 - Step 10: Vector Search in Redis
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### Step 10: Vector Similarity Search in Redis
+## SLIDE 14 - Step 10: Vector Search in Redis 🔍
+
+**Context:** Now we perform semantic similarity search. Redis compares the query embedding against thousands of document embeddings stored as vector fields in Redis Hashes, returning the most similar matches.
 
 **Code** (`app/agent/tools/search_knowledge_base.py:43`):
 
 ```python
 results = await index.query(
     VectorQuery(
-        vector=query_vector,              # [0.023, -0.145, 0.089, ...]
+        vector=query_vector,              # [0.023, -0.145, ...]
         vector_field_name="vector",
         return_fields=["name", "description"],
         num_results=5,
     )
 )
 
-# Behind the scenes: FT.SEARCH rag_doc
-#   "*=>[KNN 5 @vector $vec]"
-#   PARAMS 2 vec <binary_vector>
+# Redis command: FT.SEARCH rag_doc "*=>[KNN 5 @vector $vec]"
+#                PARAMS 2 vec <binary_vector>
 ```
 
-### 📦 Redis Storage (Hashes with Vector Fields)
+### 📦 Redis Storage (Hash + Vector Field)
 
-**Key:** `rag_doc:documentation:redis-vector-search:0`
-
-**Value (Hash):**
+**Key:** `rag_doc:documentation:semantic-caching:0`
 
 | Field | Value |
 |-------|-------|
-| `name` | "Redis Vector Search - Overview" |
-| `description` | "Redis provides native vector similarity search through RediSearch. Supports HNSW and FLAT indexing algorithms..." |
-| `source_file` | "redis-vector-search.md" |
-| `type` | "documentation" |
-| `chunk_index` | "0" |
+| `name` | "Redis Semantic Caching - Overview" |
+| `description` | "Semantic caching stores LLM responses by meaning, not exact text..." |
 | `vector` | `<6144 bytes of float32>` |
+| `source_file` | "semantic-caching.md" |
 
-**Index:** FLAT or HNSW algorithm for fast similarity search
+**Performance:** 0.5-2ms for 10K docs, <5ms for 1M docs (HNSW index)
+
+</div>
 
 ---
 
-## SLIDE 15 - Step 11: Vector Search Results
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### Step 11: Vector Search Returns Top 5 Documents
+## SLIDE 15 - Step 11: Search Results Returned
+
+**Context:** Redis returns the top 5 most semantically similar documents. These are added to the conversation as a tool result, which the LLM will use to formulate its answer.
 
 ### Search Performance:
 
-- **Query:** "Redis vector search capabilities"
-- **Time:** 0.5-2ms (sub-millisecond for 10K documents)
-- **Algorithm:** Cosine similarity
-- **Results:** Top 5 most similar documents
+- **Query:** "Redis semantic caching"
+- **Time:** 1.2ms (10K document corpus)
+- **Algorithm:** Cosine similarity via HNSW index
+- **Results:** Top 5 matches
 
 ### Results Returned to Agent:
 
 ```
-Search results for 'Redis vector search capabilities':
+Search results for 'Redis semantic caching':
 
-1. Redis Vector Search - Overview: Redis provides native vector
-   similarity search through RediSearch. Supports HNSW and FLAT
-   indexing algorithms for fast approximate/exact nearest neighbor search.
+1. Redis Semantic Caching - Overview: Semantic caching uses vector
+   similarity to match queries by meaning, not exact text. Cache
+   "What's the weather?" and match "How's the weather today?"
 
-2. HNSW Algorithm Performance: Hierarchical Navigable Small World
-   graphs offer O(log n) search complexity with 95%+ recall rates.
+2. Cost Savings with Semantic Cache: Production deployments show
+   40-60% cache hit rates, saving $1000s on LLM API costs monthly.
 
-3. Benchmarking Vector Search: Performance tests on 1M vectors show
-   1.2ms P95 latency with HNSW indexing on commodity hardware.
+3. Implementation Patterns: Store query embeddings + LLM responses
+   in Redis. On new query, find similar cached query (>0.95
+   similarity), return cached response instantly.
 
-4. FLAT vs HNSW Trade-offs: FLAT provides exact search with 100%
-   recall but O(n) time. HNSW is faster for large datasets.
+4. Semantic vs Exact Caching: Exact caching fails on paraphrases.
+   Semantic caching handles variations: "NYC weather" ≈ "New York
+   weather" ≈ "What's the weather in New York City?"
 
-5. Production Deployments: Real-world implementations handle 10M+
-   vectors with <5ms query latency using Redis vector search.
+5. Redis Vector Search Performance: Sub-millisecond lookups even
+   with millions of cached entries using HNSW indexing.
 ```
 
-**Code:** These results are added to the conversation as a tool message
+</div>
 
 ---
 
-## SLIDE 16 - Step 12: Iteration 2 - Final Answer
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### Step 12: Iteration 2 - LLM Formulates Final Answer
+## SLIDE 16 - Step 12: Agent Formulates Answer 🎯
 
-**Conversation State:**
+**Context:** The agent now has comprehensive information from the knowledge base. It reviews the search results and decides it has enough context to provide a complete answer. No more tool calls needed.
+
+### Conversation State:
 
 ```python
 messages = [
     {"role": "system", "content": SYSTEM_PROMPT},
-    {"role": "user", "content": "User question: what's Redis vector search?"},
-    {"role": "assistant", "tool_calls": [...]},  # search_knowledge_base call
-    {"role": "tool", "content": "Search results: 1. Redis Vector..."}
+    {"role": "user", "content": "Tell me about Redis for Semantic caching"},
+    {"role": "assistant", "tool_calls": [...]},  # search_knowledge_base
+    {"role": "tool", "content": "Search results: 1. Redis Semantic..."}
 ]
 ```
 
-### LLM's Reasoning:
+### LLM's Final Reasoning:
 
-**Input:** Search results with 5 relevant documents
-
-**Thinks:** *"I have comprehensive information about Redis vector search, including algorithms, performance, and trade-offs. I can now formulate a complete answer following Slack formatting rules."*
+**Thinks:** *"I have detailed information about semantic caching: what it is, why it's valuable (cost savings), how it works (vector similarity), and performance characteristics. I can now formulate a comprehensive answer in Slack-friendly markdown."*
 
 **Decision:** Return final response (no more tool calls)
 
-### Response Format (JSON):
+### Response Format:
 
 ```json
 {
-  "response": "Redis vector search provides native semantic search...",
+  "response": "Redis semantic caching matches queries by meaning...",
   "use_org_search": false
 }
 ```
 
-> **Note:** System prompt instructs LLM to return JSON with these exact keys
+> System prompt instructs LLM to return JSON with these exact keys
+
+</div>
 
 ---
 
-## SLIDE 17 - Step 13: Store Answer in Redis
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### Step 13: Store Answer for Analytics & Feedback
+## SLIDE 17 - Step 13: Store Answer in Redis 📊
+
+**Context:** Before posting to Slack, we store the complete Q&A pair in Redis as a JSON document. This powers our analytics, feedback tracking, and future improvements to the knowledge base.
 
 **Code** (`app/agent/tasks/slack_tasks.py:225`):
 
 ```python
 answer_key = keys.answer_key(user_id, text, thread_ts)
 answer_data = {
-    "id": str(ULID()),                               # Unique ID
+    "id": str(ULID()),
     "user_id": user_id,
     "question": text,
     "answer": response,
-    "accepted": "",                                  # Updated on feedback
+    "accepted": "",              # Updated when user clicks feedback
     "created_at": datetime.now(timezone.utc).timestamp(),
     "updated_at": datetime.now(timezone.utc).timestamp(),
     "thread_ts": thread_ts or "",
@@ -611,34 +632,34 @@ answer_data = {
 }
 
 async with get_answer_index() as answer_index:
-    await answer_index.load(data=[answer_data], id_field="id", keys=[answer_key])
+    await answer_index.load(data=[answer_data], id_field="id",
+                            keys=[answer_key])
 ```
 
 ### 📦 Redis Storage (JSON Document)
 
-**Key:** `answer:U12345ABC-a8f3c9d2-1234567890.123456`
-
-**Value (JSON):**
+**Key:** `answer:U789BRANDON-a8f3c9d2-1234567890.123456`
 
 ```json
 {
   "id": "01HN3KQZX9M8V7B6N5C4T3R2P1",
-  "user_id": "U12345ABC",
-  "question": "what's Redis vector search?",
-  "answer": "Redis vector search provides native semantic search...",
+  "user_id": "U789BRANDON",
+  "question": "Tell me about Redis for Semantic caching",
+  "answer": "Redis semantic caching matches queries by meaning...",
   "accepted": "",
-  "created_at": 1705315815.123,
-  "updated_at": 1705315815.123,
-  "thread_ts": "1234567890.123456",
-  "channel_id": "C789XYZ"
+  "created_at": 1705315815.123
 }
 ```
 
+</div>
+
 ---
 
-## SLIDE 18 - Step 14: Post to Slack with Feedback Buttons
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### Step 14: Post Response to Slack with Feedback Buttons
+## SLIDE 18 - Step 14: Post to Slack with Feedback 💬
+
+**Context:** Finally, we post the answer back to Slack with interactive feedback buttons. This completes the request-response cycle (~5 seconds total) and enables continuous improvement through user feedback.
 
 **Code** (`app/agent/tasks/slack_tasks.py:171`):
 
@@ -658,55 +679,58 @@ blocks = [
                 "type": "button",
                 "text": {"type": "plain_text", "text": "👎 Not Helpful"},
                 "value": f"thumbs_down:{answer_key}",
-                "action_id": "feedback_thumbs_down",
             }
         ]
     }
 ]
 ```
 
-### What User Sees:
+### What Brandon Sees:
 
 ```
-┌───────────────────────────────────────────────────────────────┐
-│ 🤖 Haink (10:30:20 AM)                                       │
-│                                                               │
-│ Redis vector search provides native semantic search          │
-│ capabilities using HNSW and FLAT indexing algorithms...      │
-│                                                               │
-│ [👍 Helpful]  [👎 Not Helpful]                              │
-└───────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────┐
+│ 🤖 Haink (10:30:20 AM)                               │
+│                                                       │
+│ Redis semantic caching matches queries by meaning,   │
+│ not exact text. Cache "weather in NYC" and match     │
+│ "New York City weather forecast"...                  │
+│                                                       │
+│ [👍 Helpful]  [👎 Not Helpful]                      │
+└───────────────────────────────────────────────────────┘
 ```
 
-**Total time:** ~5 seconds (most of that is LLM inference!)
+**Total Time:** ~5 seconds (mostly LLM inference)
+
+</div>
 
 ---
 
-## SLIDE 19 - Step 15: User Feedback Loop
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### Step 15: User Clicks Feedback → Update Redis
+## SLIDE 19 - Step 15: User Feedback Loop 🔄
 
-**User Action:** Sarah clicks 👍 Helpful
+**Context:** When Brandon clicks a feedback button, we update the stored answer in Redis using JSON path operations. This data trains future improvements and helps us identify knowledge gaps.
+
+**User Action:** Brandon clicks 👍 Helpful
 
 **Code** (`app/api/main.py:248`):
 
 ```python
 async def handle_feedback_action(ack, body, logger):
-    await ack()  # Acknowledge immediately
+    await ack()
 
-    value = action.get("value")  # "thumbs_up:answer:U12345ABC-a8f3c9d2-..."
+    value = action.get("value")  # "thumbs_up:answer:U789BRANDON..."
     accepted = value.startswith("thumbs_up")
     answer_key = value.split(":", 1)[1]
 
-    # Queue feedback update as background task
+    # Queue as background task
     async with Docket(url=get_redis_url()) as docket:
         await docket.add(update_answer_feedback, key=feedback_key)(
-            answer_key=answer_key,
-            accepted=accepted,
+            answer_key=answer_key, accepted=accepted
         )
 ```
 
-**Code** (`app/agent/tasks/slack_tasks.py:250`):
+**Update Handler** (`app/agent/tasks/slack_tasks.py:250`):
 
 ```python
 async def update_answer_feedback(answer_key: str, accepted: bool):
@@ -714,155 +738,188 @@ async def update_answer_feedback(answer_key: str, accepted: bool):
     await redis_client.json().set(answer_key, "$.updated_at", timestamp)
 ```
 
-### 📦 Redis Storage (JSON Path Update)
+### 📦 Redis JSON Path Update
 
-**Key:** `answer:U12345ABC-a8f3c9d2-1234567890.123456`
+**Key:** `answer:U789BRANDON-a8f3c9d2-1234567890.123456`
 
-**Update:**
+**Updates:**
 - `$.accepted` → `"true"`
 - `$.updated_at` → `1705315820.456`
 
+</div>
+
 ---
+
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
 ## SLIDE 20 - Complete Journey Summary
 
-### Complete Journey: 15 Steps in ~5 Seconds
+**Context:** Let's recap the entire journey. From webhook to response in ~5 seconds, touching 7 different Redis operations across 4 different data types - all in one database.
 
-| Step | Action | Redis Storage |
-|------|--------|---------------|
-| 1. | Webhook arrives | - |
-| 2. | Queue task | Stream entry |
-| 3. | Worker picks up | Read from Stream |
-| 4. | Track participation | String (TTL) |
-| 5. | Send "Thinking..." | - |
-| 6. | Gather thread context | - |
-| 7. | Agent starts ReAct loop | - |
-| 8. | Decide: search knowledge base | - |
-| 9. | Check embedding cache | String (binary, cached) |
-| 10. | Vector search | Read Hashes (vectors) |
-| 11. | Return top 5 docs | - |
-| 12. | Formulate answer | - |
-| 13. | Store answer | JSON document |
-| 14. | Post to Slack | - |
-| 15. | User feedback | JSON update |
+### 15 Steps in ~5 Seconds
+
+| Step | Action | Redis Operation |
+|------|--------|-----------------|
+| 1 | Webhook arrives | - |
+| 2 | Queue task | Stream WRITE |
+| 3 | Worker picks up | Stream READ |
+| 4 | Track participation | String SET (TTL) |
+| 5 | Send "Thinking..." | - |
+| 6 | Gather thread context | - |
+| 7-12 | **🌟 Agent ReAct loop** | **String GET (cache)** |
+|  |  | **Vector SEARCH (KNN)** |
+| 13 | Store answer | JSON WRITE |
+| 14 | Post to Slack | - |
+| 15 | User feedback | JSON UPDATE |
 
 ### Redis Operations Count:
 
-- 1 Stream write (task queue)
-- 1 Stream read (worker poll)
-- 1 String write (thread tracking)
-- 1 String read (embedding cache check)
-- 1 Vector search (KNN query)
-- 1 JSON write (answer storage)
-- 1 JSON update (feedback)
+- 1 Stream write, 1 Stream read → Task queue
+- 1 String write (TTL), 1 String read → Thread tracking & cache
+- 1 Vector search → Knowledge base (5 results in <2ms)
+- 1 JSON write, 1 JSON update → Answer storage & feedback
 
 **Total:** 7 Redis operations, all sub-millisecond
 
+</div>
+
 ---
 
-## SLIDE 21 - All Redis Data Types in One Database
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### All Redis Data Types Used in This Journey
+## SLIDE 21 - All Redis Data Types
+
+**Context:** This journey used 5 different Redis data types, each chosen for its specific strengths. All stored in ONE database, with unified operations and monitoring.
 
 ### What We Stored:
 
-**1. Stream (Task Queue)**
+**1. Stream** (Task Queue)
 - **Key:** `docket:applied-ai-agent:tasks`
-- **Why:** Guaranteed delivery, consumer groups, redelivery
+- **Why:** Guaranteed delivery, consumer groups, fault tolerance
 
-**2. String + TTL (Thread Tracking)**
-- **Key:** `thread_participation:C789XYZ:1234567890.123456`
-- **Why:** Auto-expiring flag, atomic operations
+**2. String + TTL** (Thread Tracking)
+- **Key:** `thread_participation:C123GENERAL:1234567890.123456`
+- **Why:** Auto-expiring flags, atomic operations, memory efficient
 
-**3. String Binary (Embedding Cache)**
-- **Key:** `embedding:cache:text-embedding-3-small:5a8f3c9d2e1b4f6a...`
+**3. String (Binary)** (Embedding Cache)
+- **Key:** `embedding:cache:text-embedding-3-small:9f3a8c2d...`
 - **Why:** Fast binary storage, 24h TTL, 65% cost savings
 
-**4. Hash + Vector (Knowledge Base)**
-- **Key:** `rag_doc:documentation:redis-vector-search:0`
-- **Why:** Multi-field documents with vector similarity search
+**4. Hash + Vector** (Knowledge Base)
+- **Key:** `rag_doc:documentation:semantic-caching:0`
+- **Why:** Multi-field documents with sub-ms vector similarity search
 
-**5. JSON (Answer Storage)**
-- **Key:** `answer:U12345ABC-a8f3c9d2-1234567890.123456`
+**5. JSON** (Answer Storage & Analytics)
+- **Key:** `answer:U789BRANDON-a8f3c9d2-1234567890.123456`
 - **Why:** Flexible schema, path-based updates, queryable
 
-### All in ONE Redis instance:
+### All in ONE Redis Instance:
 
-- ✅ Single connection string
-- ✅ Unified backup/restore
-- ✅ Sub-millisecond performance across all types
-- ✅ One monitoring dashboard
+✅ Single connection | ✅ Unified backup | ✅ Sub-ms performance | ✅ One dashboard
+
+</div>
 
 ---
 
-## SLIDE 22 - Next Steps
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
 
-### What You've Learned Today
+## SLIDE 22 - Agent Memory Server 🧠
 
-**Technical Deep Dive Complete:**
+**Context:** We haven't talked much about it yet, but there's a critical component: the Agent Memory Server. This is a separate microservice (also backed by Redis) that stores long-term conversation memory for each user.
 
-✅ Followed one message through 15 steps end-to-end
-✅ Saw exactly how Redis is used at each step
-✅ Examined actual key patterns and data structures
-✅ Understood why each Redis data type was chosen
-✅ Saw real code from production application
+### What is Agent Memory Server?
 
-### Key Takeaways:
+A specialized service for agent memory management:
 
-- **ONE** Redis database handles 5+ use cases
-- Every operation is sub-millisecond
-- Each data type optimized for its purpose
-- Production-ready patterns (queues, retries, TTLs)
-- 70% cost savings vs. multi-database approach
+**Features:**
+- Stores conversation history per user
+- Semantic search across past conversations
+- Automatic memory consolidation (summarizes old conversations)
+- Memory retrieval tools available to the agent
+
+**Architecture:**
+
+```
+Agent → Memory API Client → Agent Memory Server → Redis
+                                                    ├─ Vectors (memories)
+                                                    ├─ JSON (conversations)
+                                                    └─ Search indexes
+```
+
+**Code** (from Slide 11):
+
+```python
+tools = [
+    get_search_knowledge_base_tool(),
+    get_web_search_tool(),
+    *MemoryAPIClient.get_all_memory_tool_schemas(),  # ← Memory tools
+]
+```
+
+**Example:** If Brandon previously asked about vector search, the agent can recall that context when answering about semantic caching, providing continuity across days or weeks.
+
+**Benefit:** Personalized, context-aware responses that remember user history
+
+</div>
+
+---
+
+<div style="max-width: 960px; margin: 0 auto; padding: 40px;">
+
+## SLIDE 23 - Key Takeaways
+
+**Context:** We've journeyed through 15 steps, seen real production code, and examined every Redis operation. Here's what makes this architecture powerful.
+
+### What You've Learned:
+
+✅ Followed one message end-to-end through a production AI agent
+✅ Saw exactly how Redis is used at each step (7 operations, 5 data types)
+✅ Examined real code with actual file paths
+✅ Understood **where the magic happens** (ReAct agent loop)
+✅ Learned about Agent Memory Server for conversation continuity
+
+### Why This Architecture Works:
+
+- **ONE** Redis database replaces 5+ specialized systems
+- **Every operation is sub-millisecond** (even vector search)
+- **Each data type optimized** for its specific use case
+- **Production-ready patterns:** queues, retries, TTLs, fault tolerance
+- **70% cost savings** vs. multi-database approach
+- **Simple operations:** Easier to debug, monitor, and maintain
 
 ### Try It Yourself:
 
 📦 **GitHub:** `github.com/redis-applied-ai/redis-slack-worker-agent`
 
-📚 **Docs:** `Full-Overview.md` (this entire walkthrough in detail)
+📚 **Full docs:** `Full-Overview.md` in this repo
 
-🚀 **Quick Start:** `docker-compose up` (run it locally in 5 minutes)
+🚀 **Quick start:** `docker-compose up` (running in 5 minutes)
 
-💬 **Contact:** `brandon.amos@redis.com` (let's build your agent)
+💬 **Contact:** brandon.amos@redis.com
+
+</div>
 
 ---
 
 ## 📋 Presentation Guide
 
-### Slide Structure:
-- **Slides 1-4:** Introduction & Setup (5 min)
-- **Slides 5-10:** Early Steps - Webhook to Context (10 min)
-- **Slides 11-16:** Agent Brain - ReAct Loop & Search (10 min)
-- **Slides 17-20:** Storage & Summary (5 min)
-- **Slides 21-22:** Recap & Next Steps (5 min)
-- **Total: 35 minutes** + Q&A
+### Timing (35-40 minutes):
+- **Slides 1-4:** Intro & Context (5 min)
+- **Slides 5-10:** Early Steps (10 min)
+- **Slides 11-16:** 🌟 Agent Magic (10 min) ← **Emphasize this**
+- **Slides 17-21:** Storage & Data Types (8 min)
+- **Slides 22-23:** Memory Server & Takeaways (5 min)
 
-### Key Presentation Tips:
+### Presentation Tips:
 
-1. **Slow Down on Redis Storage Slides**
-   - Let audience see the actual keys and values
-   - Explain why each data type was chosen
-   - These are the "aha!" moments
-
-2. **Emphasize the Journey**
-   - "We're at Step X of 15"
-   - "Remember, all of this is in ONE database"
-   - Point back to previous steps
-
-3. **Use the Code Snippets**
-   - Show that this is real, production code
-   - File paths give credibility
-   - Encourage exploration of the repo
-
-4. **Highlight Redis Operations**
-   - "Notice: sub-millisecond every time"
-   - "This is why Redis works - fast everywhere"
+1. **"Where the Magic Happens"** - Really emphasize slides 11-16 (ReAct loop)
+2. **Show Redis operations live** - Have RedisInsight open, show actual keys
+3. **Code is real** - Mention file paths prove this is production code
+4. **One database theme** - Repeat throughout: "all in ONE Redis instance"
 
 ### Font Recommendations:
-- **Monospace:** Consolas, Courier New, SF Mono (14-16pt) for code blocks
-- **Sans-serif:** Arial, Helvetica, Calibri (18-24pt) for body text
-- **Background:** Dark (#1a1a1a) or White (#ffffff)
-- **Text:** Light gray/white (#e0e0e0) or Dark gray (#333333)
-- **Accent:** Redis Red (#DC382D) for titles and emphasis
+- **Code:** Consolas 14-16pt
+- **Body:** Calibri/Arial 18-24pt
+- **Accent:** Redis Red (#DC382D)
 
-Ready to copy-paste into PowerPoint!
+**Ready for PowerPoint!** Each slide is constrained to 960px width for optimal formatting.
